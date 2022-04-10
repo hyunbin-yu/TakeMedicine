@@ -20,20 +20,32 @@ async def on_ready():
     clock = nowtime.strftime("%H")
     firstrun = True
     while 1:
-        #print("OK")
         for i in timelist[int(clock)]:
-            temp = await bot.fetch_user(i)
-            await temp.send("야, 약 먹을 시간이에요.")
+            admin = await bot.fetch_user(739698524115173387)
+                
+            if len(timelist[int(clock)]) != 0:
+                await admin.send("이번 시간 약 알림자 : " + str(timelist[int(clock)]))
+
+                temp = await bot.fetch_user(i)
+                try:
+                    await temp.send("약 먹을 시간이에요.")
+                except:
+                    
+                    await admin.send("error")
+            else:
+                await admin.send("이번 시간엔 약 알림을 받을 사람이 없어요.")
 
         if firstrun == True:
-            #print(int(nowtime.strftime("%S")))
+            print(int(nowtime.strftime("%S")))
             lefttime = 3600 - int(nowtime.strftime("%M")) * 60 + int(nowtime.strftime("%S"))
-            #print(lefttime, "초 남음")
+            admin = await bot.fetch_user(739698524115173387)
+            await admin.send(str(lefttime))
+            print(lefttime, "초 남음")
             firstrun = False
             await asyncio.sleep(lefttime)
         else:
             await asyncio.sleep(3600)
-                
+                     
 
 @bot.event
 async def on_message(message):
