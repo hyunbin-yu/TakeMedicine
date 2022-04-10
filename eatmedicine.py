@@ -43,8 +43,12 @@ async def on_ready():
             print(lefttime, "초 남음")
             firstrun = False
             await asyncio.sleep(lefttime)
+            nowtime = datetime.now()
+            clock = nowtime.strftime("%H")
         else:
             await asyncio.sleep(3600)
+            nowtime = datetime.now()
+            clock = nowtime.strftime("%H")
                      
 
 @bot.event
