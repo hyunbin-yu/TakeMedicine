@@ -1,4 +1,3 @@
-from tkinter import Variable
 import discord
 from discord import Message, File, Embed
 from datetime import datetime
