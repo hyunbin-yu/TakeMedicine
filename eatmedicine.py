@@ -23,7 +23,7 @@ async def on_ready():
         #print("OK")
         for i in timelist[int(clock)]:
             temp = await bot.fetch_user(i)
-            await temp.send("약 먹을 시간이에요.")
+            await temp.send("야, 약 먹을 시간이에요.")
 
         if firstrun == True:
             #print(int(nowtime.strftime("%S")))
@@ -85,6 +85,10 @@ async def anmuke(ctx):
         with open("timelist.txt", "w", encoding="UTF-8") as f:
             f.write(str(timelist))
         print(timelist)
+
+@bot.command("도움")
+async def help(ctx):
+    await ctx.send("**약을 제때제때 먹을 수 있도록 도와줍니다.**\n- 약언제먹어 : 알림을 받을 시간을 알려줘요.\n- 약먹을래 : 약 먹을 시간을 새로 등록해요.\n- 약안먹을래 : 등록한 시간을 지워요.")
 
 @bot.command("언제먹어")
 async def when(ctx):
