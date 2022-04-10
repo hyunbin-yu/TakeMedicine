@@ -24,7 +24,7 @@ async def on_ready():
         #print("OK")
         for i in timelist[int(clock)]:
             temp = await bot.fetch_user(i)
-            await temp.send("야, 약 먹을 시간이에요.")
+            await temp.send("약 먹을 시간이에요.")
 
         if firstrun == True:
             #print(int(nowtime.strftime("%S")))
