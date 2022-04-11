@@ -35,7 +35,7 @@ async def on_ready():
                     await admin.send("전송 오류!" + str(temp))
             
             lastclock = clock
-            await asyncio.sleep(60)
+        await asyncio.sleep(60)
         
                      
 
