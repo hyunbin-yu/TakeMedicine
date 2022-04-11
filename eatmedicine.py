@@ -16,39 +16,27 @@ bot = commands.Bot(command_prefix=prefix)
 @bot.event
 async def on_ready():
     print("start")
-    nowtime = datetime.now()
-    clock = nowtime.strftime("%H")
-    firstrun = True
-    while 1:
-        for i in timelist[int(clock)]:
-            admin = await bot.fetch_user(739698524115173387)
-                
-            if len(timelist[int(clock)]) != 0:
-                await admin.send("이번 시간 약 알림자 : " + str(timelist[int(clock)]))
+    now = datetime.now()
+    lastclock = int(now.strftime("%H")) - 1
 
+    while 1:
+        nowtime = datetime.now()
+        clock = int(nowtime.strftime("%H"))
+        
+        if clock != lastclock:
+            admin = await bot.fetch_user(739698524115173387)
+            await admin.send("이번 시간 약 알림자 : " + str(timelist[int(clock)]))
+
+            for i in timelist[int(clock)]:                
                 temp = await bot.fetch_user(i)
                 try:
                     await temp.send("약 먹을 시간이에요.")
                 except:
-                    
-                    await admin.send("error")
-            else:
-                await admin.send("이번 시간엔 약 알림을 받을 사람이 없어요.")
-
-        if firstrun == True:
-            print(int(nowtime.strftime("%S")))
-            lefttime = 3600 - int(nowtime.strftime("%M")) * 60 + int(nowtime.strftime("%S"))
-            admin = await bot.fetch_user(739698524115173387)
-            await admin.send(str(lefttime))
-            print(lefttime, "초 남음")
-            firstrun = False
-            await asyncio.sleep(lefttime)
-            nowtime = datetime.now()
-            clock = nowtime.strftime("%H")
-        else:
-            await asyncio.sleep(3600)
-            nowtime = datetime.now()
-            clock = nowtime.strftime("%H")
+                    await admin.send("전송 오류!" + str(temp))
+            
+            lastclock = clock
+            await asyncio.sleep(60)
+        
                      
 
 @bot.event
