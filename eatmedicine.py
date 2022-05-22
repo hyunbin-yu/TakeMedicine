@@ -6,6 +6,7 @@ import time
 from discord.ext import tasks
 from discord.ext import commands
 import load_json_variable as variable
+import random
 
 with open("timelist.txt", 'r', encoding="UTF-8") as f:
     timelist = eval(f.read())
@@ -25,12 +26,11 @@ async def on_ready():
         
         if clock != lastclock:
             admin = await bot.fetch_user(739698524115173387)
-            await admin.send("이번 시간 약 알림자 : " + str(timelist[int(clock)]))
-
             for i in timelist[int(clock)]:                
                 temp = await bot.fetch_user(i)
                 try:
-                    await temp.send("약 먹을 시간이에요.")
+                    ment1 = ["약먹어!", "약 먹을 시간이에요.", "ㅇㅁㄱ", "약머겅", "약먹어라", "약은어때?", "약 먹었니?", "약.", "약먹자"]
+                    await temp.send(random.choice(ment1))
                 except:
                     await admin.send("전송 오류!" + str(temp))
             
@@ -65,7 +65,7 @@ async def react_test(ctx):
         if not ctx.author.id in timelist:
             await ctx.send("오늘부터 매일 " + mes.content + "시 정각에 DM으로 알려줄게요.")
             timelist[int(mes.content)].append(ctx.author.id)
-            with open("timelist.txt", "w", encoding="UTF-8") as f:
+            with open("timelist.txt", w, encoding="UTF-8") as f:
                 f.write(str(timelist))
         else:
             await ctx.send("이미" + mes.content + "시에 알림을 받아요.")
@@ -85,7 +85,7 @@ async def anmuke(ctx):
     else:
         await ctx.send(mes.content + "시에 더 이상 약을 먹으라고 하지 않을게요.")
         timelist[int(mes.content)].remove(ctx.author.id)
-        with open("timelist.txt", "w", encoding="UTF-8") as f:
+        with open("timelist.txt", w, encoding="UTF-8") as f:
             f.write(str(timelist))
         print(timelist)
 
@@ -103,5 +103,7 @@ async def when(ctx):
         await ctx.send(str(ctx.author) + "님은 " + str(wheneat) + "시에 약을 먹어요.")
     else:
         await ctx.send(str(ctx.author) + "님은 아직 먹는 약이 없어요.")
+
+    
 
 bot.run(variable.get_token())
