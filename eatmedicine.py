@@ -29,7 +29,7 @@ async def on_ready():
             for i in timelist[int(clock)]:                
                 temp = await bot.fetch_user(i)
                 try:
-                    ment1 = ["약먹어!", "약 먹을 시간이에요.", "ㅇㅁㄱ", "약머겅", "약먹어라", "약은어때?", "약 먹었니?", "약.", "약먹자"]
+                    ment1 = ["약먹어!", "약 먹을 시간이에요.", "ㅇㅁㄱ", "약머겅", "약먹어라", "약 먹었니?", "약.", "약먹자", "약!", "dir", "약먹어","먹었냐?","ㅋㅋ","약먹어ㅋ", "(대충 약 먹으라는 말)", "https://cdn.discordapp.com/attachments/829740794557497367/980341361276502046/unknown.png"]
                     await temp.send(random.choice(ment1))
                 except:
                     await admin.send("전송 오류!" + str(temp))
