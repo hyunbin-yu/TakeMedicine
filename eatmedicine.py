@@ -1,112 +1,206 @@
-import discord
-from discord import Message, File, Embed
-from datetime import datetime
-import asyncio
+from flask import Flask
+import requests
 import time
-from discord.ext import tasks
-from discord.ext import commands
-import load_json_variable as variable
-import random
 
-with open("timelist.txt", 'r', encoding="UTF-8") as f:
-    timelist = eval(f.read())
+class Smeal:  # Smeal 클래스 생성
+    def __init__(self, ooe, code, sclass):  # 초기화자 메서드 선언 (기본학교정보설정)
+        city_dict = {"서울": "sen.go.kr", "부산": "pen.go.kr", "대구": "dge.go.kr",
+                     "인천": "ice.go.kr", "광주": "gen.go.kr", "대전": "dje.go.kr",
+                     "울산": "use.go.kr", "세종": "sje.go.kr", "경기": "goe.go.kr",
+                     "강원": "kwe.go.kr", "충북": "cbe.go.kr", "충남": "cne.go.kr",
+                     "전북": "jbe.go.kr", "전남": "jne.go.kr", "경북": "gbe.kr",
+                     "경남": "gne.go.kr", "제주": "jje.go.kr"}  # 학교 목록
 
-prefix = "약"
-bot = commands.Bot(command_prefix=prefix)
+        self.ooe = city_dict.get(ooe, "nocity")
+        self.sclass = sclass  # 교급
+        self.code = code  # 학교 고유 코드
 
-@bot.event
-async def on_ready():
-    print("start")
-    now = datetime.now()
-    lastclock = int(now.strftime("%H")) - 1
+    def day(self, yeon, dal, il, kind):  # 하루치 급식을 조회
+        if type(self.ooe) != str or type(yeon) != str or type(self.sclass) != str\
+                or type(kind) != str or type(self.code) != str or type(dal) != str\
+                or type(il) != str:  # 문자열 형식으로 올바르게 받았는지 확인하는 코드
+            return("TYPE ERROR")
 
-    while 1:
-        nowtime = datetime.now()
-        clock = int(nowtime.strftime("%H"))
-        
-        if clock != lastclock:
-            admin = await bot.fetch_user(739698524115173387)
-            for i in timelist[int(clock)]:                
-                temp = await bot.fetch_user(i)
-                try:
-                    ment1 = ["병이나 상처를 치료하기 위해 먹거나 바르거나 주사하는 물질(의약품) 또는 특수 ·일반 화학공업에서 쓰이거나 추출된 작용물질을 먹지 않으면 약이 지닌 그 본래의 작용 이외에 부수적으로 일어나는 작용을 일으키기 때문에 너는 지금 약을 먹어야 한다 반박시 니말이 맞음", 
-                             "약먹어!", "약 먹을 시간이에요.", "ㅇㅁㄱ", "약머겅", "약먹어라", "약 먹었니?", "약.", "약먹자", "약!", "dir", "약먹어",
-                             "먹었냐?","ㅋㅋ","약먹어ㅋ", "(대충 약 먹으라는 말)", "https://cdn.discordapp.com/attachments/829740794557497367/980341361276502046/unknown.png",
-                            "약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어 약 먹어"]
-                    await temp.send(random.choice(ment1))
-                except:
-                    await admin.send("전송 오류!" + str(temp))
-            
-            lastclock = clock
-        await asyncio.sleep(60)
+        if len(yeon) != 4 or len(dal) != 2 or len(il) != 2\
+                or len(self.sclass) != 1 or len(kind) != 1:  # 길이가 알맞는지 확인하는 코드
+            return("SIZE ERROR")
 
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return None
-    await bot.process_commands(message)
+        if self.ooe == "nocity":
+            return("OFFICE ERROR")
 
-@bot.command("꺼")
-async def logout(ctx):
-    if ctx.author.id == "739698524115173387":
-        quit()
+        ymd = yeon + "." + dal + "." + il  # 년도 조합
 
-@bot.command("먹을래")
-async def react_test(ctx):
-    def check(mes: Message):
-        return mes.author == ctx.author and mes.channel == ctx.channel
+        url = "http://stu." + self.ooe + "/sts_sci_md01_001.do"  # 나이스 급식 조회 주소
+        para = {
+            "schulCode": self.code,  # 학교 코드
+            "schulCrseScCode": self.sclass,  # 교급
+            "schulKnaScCode": "0" + self.sclass,  # 교급
+            "schMmealScCode": kind,  # 식단 종류
+            "schYmd": ymd  # 조회년월일
+        }
 
-    try:
-        await ctx.send("몇시에 먹을래요? 0부터 23 사이의 정수를 입력해주세요.")
-        mes: Message = await ctx.bot.wait_for('message', check=check, timeout=30)
+        response = requests.get(url, params=para)  # 급식 정보 조회
+        if int(response.status_code) != 200:  # 응답이 200 (정상응답)이 아닐경우
+            return('SERVER ERROR')  # 에러 반환
 
-    except asyncio.TimeoutError:
-        await ctx.send("제한 시간을 초과했어요. 처음부터 다시 해주세요. 죄송해요.")  
-    if not 0 <= int(mes.content) <= 23:
-        await ctx.send("아니요. 그렇게 입력하면 안돼요. 처음부터 다시 해주세요.")
-    else:
-        if not ctx.author.id in timelist:
-            await ctx.send("오늘부터 매일 " + mes.content + "시 정각에 DM으로 알려줄게요.")
-            timelist[int(mes.content)].append(ctx.author.id)
-            with open("timelist.txt", w, encoding="UTF-8") as f:
-                f.write(str(timelist))
-        else:
-            await ctx.send("이미" + mes.content + "시에 알림을 받아요.")
-    
-@bot.command("안먹을래")
-async def anmuke(ctx):
-    def check(mes: Message):
-        return mes.author == ctx.author and mes.channel == ctx.channel
-    try:
-        await ctx.send(str(ctx.author) + "님, 몇 시에 안 드실래요?")
-        mes: Message = await ctx.bot.wait_for('message', check=check, timeout=30)
+        foodhtml = BeautifulSoup(response.text, 'html.parser')  # 급식정보 파싱 준비
+        foodhtml_data_tr = foodhtml.find_all('tr')  # 모든 tr태그 불러오기
 
-    except asyncio.TimeoutError:
-        await ctx.send("제한 시간을 초과했어요. 처음부터 다시 해주세요. 죄송해요.")  
-    if not 0 <= int(mes.content) <= 23:
-        await ctx.send("아니요. 그렇게 입력하면 안돼요. 처음부터 다시 해주세요.")
-    else:
-        await ctx.send(mes.content + "시에 더 이상 약을 먹으라고 하지 않을게요.")
-        timelist[int(mes.content)].remove(ctx.author.id)
-        with open("timelist.txt", w, encoding="UTF-8") as f:
-            f.write(str(timelist))
-        print(timelist)
+        # 몇번째 행에 급식 정보가 존재하는지 구분하는 로직
 
-@bot.command("도움")
-async def help(ctx):
-    await ctx.send("**약을 제때제때 먹을 수 있도록 도와줍니다.**\n- 약언제먹어 : 알림을 받을 시간을 알려줘요.\n- 약먹을래 : 약 먹을 시간을 새로 등록해요.\n- 약안먹을래 : 등록한 시간을 지워요.")
+        foodhtml_data = foodhtml_data_tr[0].find_all('th')  # 날짜 정보가 있는 열을 불러옴
 
-@bot.command("언제먹어")
-async def when(ctx):
-    wheneat = []
-    for i in range(24):
-        if ctx.author.id in timelist[i]:
-            wheneat.append(i)
-    if not str(wheneat) == "[]":
-        await ctx.send(str(ctx.author) + "님은 " + str(wheneat) + "시에 약을 먹어요.")
-    else:
-        await ctx.send(str(ctx.author) + "님은 아직 먹는 약이 없어요.")
+        try:  # 예외 처리를 위한 try
+            for i in range(1, 7):  # 월요일부터 일요일까지 하나하나 대입 준비
+                date = str(foodhtml_data[i])  # i요일째 날짜 정보 확인
+                date_filter = ['<th class="point2" scope="col">', '<th class="last point1" scope="col">',
+                               '<th scope="col">', '</th>', '(', ')', '일', '월', '화', '수', '목', '금', '토']  # 제거해야 하는 목록
 
-    
+                for sakje in date_filter:
+                    date = date.replace(sakje, '')  # 찌끄레기를 삭제
 
-bot.run(variable.get_token())
+                if date != ymd:  # 날짜와 입력날짜 동일 여부 확인
+                    continue
+
+                hang = i - 1  # 급식정보가 존재하는 행 선언
+                break  # 존재 확인 로직 정지
+
+        except:  # 에러 발생시 데이터베이스 에러 반환
+            return("NO DATABASE")
+
+        # 급식 정보 조회 시작
+
+        try:
+            food = foodhtml_data_tr[2].find_all(
+                'td')  # 급식정보가 있는 행의 모든 td 태그 불러오기
+            food = str(food[hang])  # hang 번째에 있는 급식 정보 불러옴
+
+            food_filter = ['<td class="textC">',
+                           '<td class="textC last">', '</td>']  # 제거해야 하는 목록
+
+            for sakje in food_filter:
+                food = food.replace(sakje, '')  # 찌끄레기를 삭제
+
+            if food == ' ':
+                food = '급식이 예정되지 않았거나 정보가 존재하지 않습니다.'  # 만약 조회시 급식정보가 없다면 미존재 안내
+
+        except:
+            food = 'NO DATABASE'  # 급식 조회 실패시 안내
+
+        return(food)  # 정보 반환
+
+    def month(self, yeon, dal, kind, output):  # 한달치 급식을 조회
+        # 조회하는 월의 마지막 날 구하는 로직
+        if dal == '02':  # 2월 조회시
+            if int(yeon) % 4 == 0 and int(yeon) % 100 != 0:  # 윤년일 경우 29일이 마지막
+                last_day = 29
+            elif int(yeon) % 400 == 0:
+                last_day = 29
+            else:  # 아니면 28이 마지막
+                last_day = 28
+        elif dal == '01' or dal == '03' or dal == '05' or dal == '07' or dal == '08' or dal == '10' or dal == '12':  # 끝날이 31일 목록
+            last_day = 31
+        else:  # 이외는 모두 30일이 마지막
+            last_day = 30
+
+        if output == "e":  # 엑셀 저장 기능
+            op = openpyxl.Workbook()
+            ex = op.active
+
+            try:  # 예외 처리를 위한 try문
+                for i in range(1, last_day + 1):  # 한달치 모두 대입하는 반복문
+                    if i < 10:  # 일 정보가 10 미만일때
+                        i = str(i)
+                        i = "0" + i  # 매개변수 입력 규칙에 의거 두자리로 변환
+
+                    i = str(i)
+
+                    meal = self.day(yeon, dal, i, kind)  # 급식 정보 불러옴
+                    ex.cell(row=int(i), column=1).value = yeon + \
+                        "년" + dal + "월" + i + "일"  # 날짜 정보 엑셀 삽입
+                    ex.cell(row=int(i), column=2).value = meal  # 급식 정보 삽입
+
+                op.save(self.code + "_" + yeon + "년 " + dal + "월" + ".xlsx")
+                op.close
+                return("SUCCEED")
+
+            except:  # 실패시 실패 에러 안내
+                op.close()  # 엑셀 닫기
+                return("EXCEL ERROR")
+
+       
+# ~~ 3. 학교 학사일정을 불러오는 api ~~
+
+class Scalendar:  # Scalendar 클래스 생성
+    def __init__(self, ooe, code, sclass):  # 초기화자 선언
+        city_dict = {"서울": "sen.go.kr", "부산": "pen.go.kr", "대구": "dge.go.kr",
+                     "인천": "ice.go.kr", "광주": "gen.go.kr", "대전": "dje.go.kr",
+                     "울산": "use.go.kr", "세종": "sje.go.kr", "경기": "goe.go.kr",
+                     "강원": "kwe.go.kr", "충북": "cbe.go.kr", "충남": "cne.go.kr",
+                     "전북": "jbe.go.kr", "전남": "jne.go.kr", "경북": "gbe.kr",
+                     "경남": "gne.go.kr", "제주": "jje.go.kr"}  # 학교 목록
+
+        self.ooe = city_dict.get(ooe, "nocity")
+        self.sclass = sclass  # 교급
+        self.code = code  # 학교 고유 코드
+
+    def month(self, yeon, dal):
+        if type(self.ooe) != str or type(yeon) != str or type(self.sclass) != str\
+                or type(yeon) != str or type(self.code) != str or type(dal) != str:  # 문자열 형식으로 올바르게 받았는지 확인하는 코드
+            return("TYPE ERROR")
+
+        if len(yeon) != 4 or len(dal) != 2 or len(self.sclass) != 1:  # 길이가 알맞는지 확인하는 코드
+            return("SIZE ERROR")
+
+        if self.ooe == "nocity":
+            return("OFFICE ERROR")
+
+        try:
+            url = "http://stu." + self.ooe + "/sts_sci_sf01_001.do"  # 월간 계획 주소
+            para = {
+                "schulCode": self.code,  # 학교코드
+                "schulCrseScCode": self.sclass,  # 교급
+                "schulKndScCode": "0" + self.sclass,  # 교급
+                "ay": yeon,  # 조회년도
+                "mm": dal  # 조회월
+            }
+
+            re = requests.get(url, params=para)  # 나이스 학사일정 조회
+            if int(re.status_code) != 200:  # 비정상 접속시 에러 반환
+                return("SERVER ERROR")
+
+            html = BeautifulSoup(re.text, 'html.parser')  # 파싱 준비
+            html = html.find_all('td')  # td(테이블 구분) 태그만 불러옴
+
+            html_size = len(html)  # 몇줄 있는지 확인
+            calendar = {}
+
+            for i in range(0, html_size):  # 날짜 및 일정 내용 분류
+                html_date = str(html[i].find('em'))  # 날짜 정보 빼오기
+                html_body = str(html[i].find('strong'))  # 일정 정보 빼오기
+
+                for sakje in ['<em>', '</em>', '<em class="point2">']:
+                    html_date = html_date.replace(sakje, '')  # html 태그 제거
+
+                for sakje in ['<strong>', '</strong>']:
+                    html_body = html_body.replace(sakje, '')  # html 태그 제거
+
+                if html_body == "None":  # 학사일정 미 존재시
+                    html_body = "학사일정이 존재하지 않습니다."  # 안내멘트
+
+                if html_date == "":  # 날짜정보 미 존재시
+                    continue  # 반복문 탈출
+
+                calendar[html_date] = html_body  # 딕셔너리 추가
+
+        except:
+            calendar = "NO DATABASE"  # 에러 전달
+
+        return(calendar)  # 반환
+
+app = Flask(__name__)
+
+@app.route('/meal', methods=['POST'])
+def meal():
+    c = Smeal("대전", "G100000202", time.strftime('%m', time.localtime(time.time())))
+    return c.month("2022", time.strftime('%m', time.localtime(time.time())))[time.strftime('%d', time.localtime(time.time()))]
